@@ -1,0 +1,49 @@
+name: daily_dose
+description: "DailyFlow - A minimal productivity app with Tasks, Expenses, and Meditation."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+
+  # State management & routing
+  get: ^4.6.6
+
+  # Local storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.20.1
+
+  # Audio & haptics
+  just_audio: ^0.9.40
+  vibration: ^2.0.0
+
+  # Charts (for expenses)
+  fl_chart: ^0.69.2
+  flutter_local_notifications: ^20.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/audio/
