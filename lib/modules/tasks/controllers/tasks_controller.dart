@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 import 'package:daily_dose/data/models/task_model.dart';
 import 'package:daily_dose/data/repositories/task_repository.dart';
 
@@ -35,10 +36,13 @@ class TasksController extends GetxController {
   // ============ DATA LOADING ============
 
   /// Load all tasks from repository
-  void loadTasks() {
+  Future<void> loadTasks() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+
+      // Reset stale completions from previous days
+      await _taskRepository.resetDailyTasks();
 
       tasks.value = _taskRepository.getAllTasks();
       todaysTasks.value = _taskRepository.getTodaysTasks();
@@ -52,7 +56,7 @@ class TasksController extends GetxController {
 
   /// Refresh tasks (pull-to-refresh)
   Future<void> refreshTasks() async {
-    loadTasks();
+    await loadTasks();
   }
 
   // ============ COMPUTED GETTERS ============
@@ -106,7 +110,7 @@ class TasksController extends GetxController {
         dueDate: dueDate,
       );
 
-      loadTasks();
+      await loadTasks();
     } catch (e) {
       errorMessage.value = 'Failed to create task: $e';
     } finally {
@@ -121,7 +125,7 @@ class TasksController extends GetxController {
       errorMessage.value = '';
 
       await _taskRepository.updateTask(task);
-      loadTasks();
+      await loadTasks();
     } catch (e) {
       errorMessage.value = 'Failed to update task: $e';
     } finally {
@@ -136,7 +140,7 @@ class TasksController extends GetxController {
       errorMessage.value = '';
 
       await _taskRepository.deleteTask(id);
-      loadTasks();
+      await loadTasks();
     } catch (e) {
       errorMessage.value = 'Failed to delete task: $e';
     } finally {
@@ -146,11 +150,53 @@ class TasksController extends GetxController {
 
   /// Toggle task completion
   Future<void> toggleTaskCompletion(String id) async {
+    // Optimistic update for snappier UI
+    final index = tasks.indexWhere((t) => t.id == id);
+    if (index == -1) return;
+
+    final original = tasks[index];
+    final toggled = original.copyWith(
+      isCompleted: !original.isCompleted,
+      completedAt: original.isCompleted ? null : DateTime.now(),
+      streakCount: original.isCompleted
+          ? original.streakCount
+          : original.streakCount + 1,
+    );
+
+    tasks[index] = toggled;
+    tasks.refresh();
+
+    final todayIndex = todaysTasks.indexWhere((t) => t.id == id);
+    if (todayIndex != -1) {
+      todaysTasks[todayIndex] = toggled;
+      todaysTasks.refresh();
+    }
+
     try {
       await _taskRepository.toggleTaskCompletion(id);
-      loadTasks();
+
+      // Pull fresh record to sync derived fields (streak count, completedAt)
+      final fresh = _taskRepository.getTask(id);
+      if (fresh != null) {
+        tasks[index] = fresh;
+        tasks.refresh();
+        if (todayIndex != -1) {
+          todaysTasks[todayIndex] = fresh;
+          todaysTasks.refresh();
+        }
+      }
+
+      currentStreak.value = _taskRepository.getCurrentStreak();
     } catch (e) {
+      // Revert on failure
+      tasks[index] = original;
+      tasks.refresh();
+      if (todayIndex != -1) {
+        todaysTasks[todayIndex] = original;
+        todaysTasks.refresh();
+      }
       errorMessage.value = 'Failed to update task: $e';
+      AppToast.error(Get.context!, 'Could not update task status');
     }
   }
 

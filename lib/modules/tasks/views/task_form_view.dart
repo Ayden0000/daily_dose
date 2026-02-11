@@ -7,7 +7,9 @@ import 'package:daily_dose/app/theme/app_colors.dart';
 import 'package:daily_dose/app/theme/app_spacing.dart';
 import 'package:daily_dose/data/models/task_model.dart';
 import 'package:daily_dose/modules/tasks/controllers/tasks_controller.dart';
+import 'package:daily_dose/modules/tasks/widgets/priority_option.dart';
 import 'package:daily_dose/widgets/app_button.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 import 'package:daily_dose/widgets/app_input.dart';
 
 /// Task form for create/edit
@@ -71,11 +73,7 @@ class TaskFormView extends GetView<TasksController> {
               isFullWidth: true,
               onPressed: () {
                 if (titleController.text.trim().isEmpty) {
-                  Get.snackbar(
-                    'Error',
-                    'Please enter a task title',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
+                  AppToast.error(context, 'Please enter a task title');
                   return;
                 }
 
@@ -98,6 +96,10 @@ class TaskFormView extends GetView<TasksController> {
                   );
                 }
                 Get.back();
+                AppToast.success(
+                  context,
+                  isEditing ? 'Task updated' : 'Task created',
+                );
               },
             ),
           ],
@@ -117,25 +119,31 @@ class TaskFormView extends GetView<TasksController> {
         Obx(
           () => Row(
             children: [
-              _PriorityOption(
-                label: 'Low',
-                color: AppColors.priorityLow,
-                isSelected: priority.value == 1,
-                onTap: () => priority.value = 1,
+              Expanded(
+                child: PriorityOption(
+                  label: 'Low',
+                  color: AppColors.priorityLow,
+                  isSelected: priority.value == 1,
+                  onTap: () => priority.value = 1,
+                ),
               ),
               AppSpacing.hGapSm,
-              _PriorityOption(
-                label: 'Medium',
-                color: AppColors.priorityMedium,
-                isSelected: priority.value == 2,
-                onTap: () => priority.value = 2,
+              Expanded(
+                child: PriorityOption(
+                  label: 'Medium',
+                  color: AppColors.priorityMedium,
+                  isSelected: priority.value == 2,
+                  onTap: () => priority.value = 2,
+                ),
               ),
               AppSpacing.hGapSm,
-              _PriorityOption(
-                label: 'High',
-                color: AppColors.priorityHigh,
-                isSelected: priority.value == 3,
-                onTap: () => priority.value = 3,
+              Expanded(
+                child: PriorityOption(
+                  label: 'High',
+                  color: AppColors.priorityHigh,
+                  isSelected: priority.value == 3,
+                  onTap: () => priority.value = 3,
+                ),
               ),
             ],
           ),
@@ -207,57 +215,6 @@ class TaskFormView extends GetView<TasksController> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PriorityOption extends StatelessWidget {
-  final String label;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PriorityOption({
-    required this.label,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppSpacing.borderRadiusMd,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? color.withValues(alpha: 0.15)
-                : Colors.transparent,
-            border: Border.all(
-              color: isSelected
-                  ? color
-                  : theme.dividerTheme.color ?? Colors.grey,
-              width: isSelected ? 2 : 1,
-            ),
-            borderRadius: AppSpacing.borderRadiusMd,
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: isSelected ? color : null,
-                fontWeight: isSelected ? FontWeight.w600 : null,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

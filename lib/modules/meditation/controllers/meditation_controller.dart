@@ -14,7 +14,8 @@ enum TimerState { idle, running, paused }
 /// Controller for Meditation module
 ///
 /// Manages breathing timer, pattern selection, and session tracking.
-/// Phase durations are measured in beats at 50 BPM (1.2s per beat).
+/// Phase durations are in beats at 50 BPM (1.2 seconds per beat).
+/// The countdown displays beats remaining — matching the pattern numbers.
 class MeditationController extends GetxController {
   final MeditationRepository _meditationRepository;
   final AudioService _audioService;
@@ -30,7 +31,7 @@ class MeditationController extends GetxController {
 
   // ============ CONSTANTS ============
 
-  /// Beat interval at 50 BPM in milliseconds
+  /// Beat interval at 50 BPM = 1200 ms per beat
   static const int beatIntervalMs = 1200;
 
   // ============ REACTIVE STATE ============
@@ -38,7 +39,7 @@ class MeditationController extends GetxController {
   final Rx<TimerState> timerState = TimerState.idle.obs;
   final Rx<BreathingPhase> currentPhase = BreathingPhase.idle.obs;
   final RxDouble phaseProgress = 0.0.obs;
-  final RxInt phaseSecondsRemaining = 0.obs;
+  final RxInt beatsRemaining = 0.obs;
   final RxInt completedCycles = 0.obs;
   final RxInt elapsedSeconds = 0.obs;
   final RxBool audioEnabled = true.obs;
@@ -209,7 +210,7 @@ class MeditationController extends GetxController {
     timerState.value = TimerState.idle;
     currentPhase.value = BreathingPhase.idle;
     phaseProgress.value = 0.0;
-    phaseSecondsRemaining.value = 0;
+    beatsRemaining.value = 0;
     completedCycles.value = 0;
     elapsedSeconds.value = 0;
   }
@@ -226,8 +227,7 @@ class MeditationController extends GetxController {
       return;
     }
 
-    phaseSecondsRemaining.value = (_totalBeatsInPhase * beatIntervalMs / 1000)
-        .ceil();
+    beatsRemaining.value = _totalBeatsInPhase;
     phaseProgress.value = 0.0;
 
     // Vibrate on phase transition
@@ -235,7 +235,8 @@ class MeditationController extends GetxController {
       _vibrationService.vibrateShort();
     }
 
-    // Tick at beat interval (1.2s for 50 BPM)
+    // Tick at exactly 50 BPM (1.2s per beat)
+    _phaseTimer?.cancel();
     _phaseTimer = Timer.periodic(
       const Duration(milliseconds: beatIntervalMs),
       (_) => _onBeat(),
@@ -245,25 +246,23 @@ class MeditationController extends GetxController {
   void _onBeat() {
     _currentBeat++;
     phaseProgress.value = _currentBeat / _totalBeatsInPhase;
-
-    // Update seconds remaining (approximate)
-    final remainingBeats = _totalBeatsInPhase - _currentBeat;
-    phaseSecondsRemaining.value = (remainingBeats * beatIntervalMs / 1000)
-        .ceil();
+    beatsRemaining.value = _totalBeatsInPhase - _currentBeat;
 
     if (_currentBeat >= _totalBeatsInPhase) {
       _phaseTimer?.cancel();
+      beatsRemaining.value = 0;
       _advanceToNextPhase();
     }
   }
 
   void _resumePhase() {
-    final remainingBeats = _totalBeatsInPhase - _currentBeat;
-    if (remainingBeats <= 0) {
+    final remaining = _totalBeatsInPhase - _currentBeat;
+    if (remaining <= 0) {
       _advanceToNextPhase();
       return;
     }
 
+    _phaseTimer?.cancel();
     _phaseTimer = Timer.periodic(
       const Duration(milliseconds: beatIntervalMs),
       (_) => _onBeat(),

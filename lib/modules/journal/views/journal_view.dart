@@ -263,6 +263,7 @@ class JournalView extends GetView<JournalController> {
 
           // Journal text
           TextField(
+            controller: controller.contentTextController,
             onChanged: (v) => controller.content.value = v,
             style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
@@ -341,7 +342,7 @@ class JournalView extends GetView<JournalController> {
                 child: Text(
                   'Start logging to see your trend',
                   style: TextStyle(
-                    color: isDark ? Colors.white38 : Colors.grey,
+                    color: AppColors.journalAccent.withValues(alpha: 0.5),
                     fontSize: 13,
                   ),
                 ),
@@ -419,7 +420,7 @@ class JournalView extends GetView<JournalController> {
                 child: Text(
                   'No entries yet',
                   style: TextStyle(
-                    color: isDark ? Colors.white38 : Colors.grey,
+                    color: AppColors.journalAccent.withValues(alpha: 0.5),
                   ),
                 ),
               ),

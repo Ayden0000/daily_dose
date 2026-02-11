@@ -4,11 +4,11 @@ part 'breathing_pattern_model.g.dart';
 
 /// Breathing pattern model for meditation
 ///
-/// Pattern consists of 4 phases:
-/// - inhale: seconds to breathe in
-/// - hold1: seconds to hold after inhale
-/// - exhale: seconds to breathe out
-/// - hold2: seconds to hold after exhale
+/// Pattern consists of 4 phases measured in beats at 50 BPM (1.2s per beat):
+/// - inhale: beats to breathe in
+/// - hold1: beats to hold after inhale
+/// - exhale: beats to breathe out
+/// - hold2: beats to hold after exhale
 @HiveType(typeId: 2)
 class BreathingPatternModel extends HiveObject {
   @HiveField(0)

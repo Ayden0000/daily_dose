@@ -142,12 +142,12 @@ class MeditationView extends GetView<MeditationController> {
           ),
         ),
         const SizedBox(height: 8),
-        // Countdown
+        // Countdown (beats remaining at 50 BPM)
         Obx(
           () => Text(
             controller.timerState.value == TimerState.idle
                 ? ''
-                : '${controller.phaseSecondsRemaining.value}',
+                : '${controller.beatsRemaining.value}',
             style: TextStyle(
               fontSize: 56,
               fontWeight: FontWeight.w200,

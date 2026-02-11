@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 import 'package:daily_dose/data/models/habit_model.dart';
 import 'package:daily_dose/data/models/habit_completion_model.dart';
 import 'package:daily_dose/data/repositories/habit_repository.dart';
@@ -21,6 +22,7 @@ class HabitController extends GetxController {
   final RxList<HabitCompletionModel> todaysCompletions =
       <HabitCompletionModel>[].obs;
   final Rx<DateTime> selectedDate = DateTime.now().obs;
+  final RxString errorMessage = ''.obs;
 
   // ============ LIFECYCLE ============
 
@@ -33,19 +35,24 @@ class HabitController extends GetxController {
   // ============ DATA LOADING ============
 
   /// Load habits and today's completions
-  void loadHabits() {
-    isLoading.value = true;
+  Future<void> loadHabits() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
 
-    habits.value = _habitRepo.getHabitsForDate(selectedDate.value);
-    todaysCompletions.value = _habitRepo.getCompletionsForDate(
-      selectedDate.value,
-    );
-
-    isLoading.value = false;
+      habits.value = _habitRepo.getHabitsForDate(selectedDate.value);
+      todaysCompletions.value = _habitRepo.getCompletionsForDate(
+        selectedDate.value,
+      );
+    } catch (e) {
+      errorMessage.value = 'Failed to load habits: $e';
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   /// Refresh when returning from other screens
-  void refreshData() => loadHabits();
+  Future<void> refreshData() async => loadHabits();
 
   // ============ ACTIONS ============
 
@@ -73,8 +80,43 @@ class HabitController extends GetxController {
 
   /// Toggle completion for a habit
   Future<void> toggleCompletion(String habitId) async {
-    await _habitRepo.toggleCompletion(habitId);
-    loadHabits();
+    final wasCompleted = isHabitCompleted(habitId);
+
+    // Optimistic UI update
+    final previousCompletions = List<HabitCompletionModel>.from(
+      todaysCompletions,
+    );
+    final previousHabits = List<HabitModel>.from(habits);
+
+    if (wasCompleted) {
+      todaysCompletions.removeWhere((c) => c.habitId == habitId);
+      todaysCompletions.refresh();
+    } else {
+      final now = DateTime.now();
+      todaysCompletions.add(
+        HabitCompletionModel(
+          id: 'local-$habitId',
+          habitId: habitId,
+          date: DateTime(now.year, now.month, now.day),
+          completedAt: now,
+        ),
+      );
+      todaysCompletions.refresh();
+    }
+
+    try {
+      await _habitRepo.toggleCompletion(habitId);
+      todaysCompletions.value = _habitRepo.getCompletionsForDate(
+        selectedDate.value,
+      );
+      habits.value = _habitRepo.getHabitsForDate(selectedDate.value);
+    } catch (e) {
+      // Revert on failure
+      todaysCompletions.value = previousCompletions;
+      habits.value = previousHabits;
+      errorMessage.value = 'Failed to update habit: $e';
+      AppToast.error(Get.context!, 'Could not update habit');
+    }
   }
 
   /// Delete a habit

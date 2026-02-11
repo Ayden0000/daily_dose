@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 import 'package:daily_dose/data/models/journal_entry_model.dart';
 import 'package:daily_dose/data/repositories/journal_repository.dart';
 
@@ -20,12 +22,22 @@ class JournalController extends GetxController {
   final RxList<String> selectedTags = <String>[].obs;
   final RxList<double> moodTrend = <double>[].obs;
 
+  /// TextEditingController for the journal content field.
+  /// Kept here so it can be cleared on save.
+  final TextEditingController contentTextController = TextEditingController();
+
   // ============ LIFECYCLE ============
 
   @override
   void onInit() {
     super.onInit();
     loadEntries();
+  }
+
+  @override
+  void onClose() {
+    contentTextController.dispose();
+    super.onClose();
   }
 
   // ============ DATA LOADING ============
@@ -46,6 +58,9 @@ class JournalController extends GetxController {
   Future<void> saveEntry() async {
     if (selectedMood.value < 1) return;
 
+    // Sync in case onChanged missed the last keystroke (paste, autocomplete)
+    content.value = contentTextController.text;
+
     await _journalRepo.createEntry(
       mood: selectedMood.value,
       content: content.value.isNotEmpty ? content.value : null,
@@ -55,9 +70,12 @@ class JournalController extends GetxController {
     // Reset form
     selectedMood.value = 3;
     content.value = '';
+    contentTextController.clear();
     selectedTags.clear();
 
     loadEntries();
+
+    AppToast.success(Get.context!, 'Journal entry saved');
   }
 
   /// Update an existing entry

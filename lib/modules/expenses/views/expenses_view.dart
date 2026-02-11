@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:daily_dose/app/constants/app_icons.dart';
 import 'package:get/get.dart';
 import 'package:daily_dose/modules/expenses/controllers/expenses_controller.dart';
 import 'package:daily_dose/widgets/empty_state.dart';
 import 'package:daily_dose/widgets/loading_state.dart';
-import 'package:daily_dose/widgets/app_button.dart';
+import 'package:daily_dose/app/theme/app_colors.dart';
+import 'package:daily_dose/widgets/primary_action_button.dart';
+import 'package:daily_dose/widgets/error_banner.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 import 'package:intl/intl.dart';
 
 /// Expenses View - Premium Design
@@ -19,8 +21,8 @@ class ExpensesView extends GetView<ExpensesController> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0D0D1A)
-          : const Color(0xFFF8FAFF),
+          ? AppColors.scaffoldDark
+          : AppColors.scaffoldLight,
       body: SafeArea(
         child: Obx(() {
           if (controller.isLoading.value) {
@@ -30,25 +32,37 @@ class ExpensesView extends GetView<ExpensesController> {
           return Column(
             children: [
               _buildHeader(context, isDark),
+              if (controller.errorMessage.isNotEmpty)
+                ErrorBanner(
+                  message: controller.errorMessage.value,
+                  onClose: () => controller.errorMessage.value = '',
+                ),
               Expanded(
                 child: controller.periodExpenses.isEmpty
                     ? EmptyState(
                         icon: AppIcons.wallet,
                         title: 'No expenses yet',
                         subtitle: 'Start tracking your spending',
-                        action: AppButton(
-                          label: 'Add Expense',
-                          icon: AppIcons.add,
-                          onPressed: () => _showExpenseForm(context, isDark),
-                        ),
+                        iconColor: AppColors.expensesAccent,
                       )
-                    : _buildExpenseList(context, isDark),
+                    : RefreshIndicator(
+                        onRefresh: controller.refreshExpenses,
+                        child: _buildExpenseList(context, isDark),
+                      ),
               ),
             ],
           );
         }),
       ),
-      floatingActionButton: _buildFAB(context, isDark),
+      bottomNavigationBar: PrimaryActionButton(
+        label: 'Add Expense',
+        icon: AppIcons.add,
+        gradient: const [
+          AppColors.expensesAccent,
+          AppColors.expensesGradientEnd,
+        ],
+        onPressed: () => _showExpenseForm(context, isDark),
+      ),
     );
   }
 
@@ -101,11 +115,14 @@ class ExpensesView extends GetView<ExpensesController> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                  colors: [
+                    AppColors.expensesAccent,
+                    AppColors.expensesGradientEnd,
+                  ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.4),
+                    color: AppColors.expensesAccent.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -304,30 +321,6 @@ class ExpensesView extends GetView<ExpensesController> {
     );
   }
 
-  Widget _buildFAB(BuildContext context, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF6B6B).withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () => _showExpenseForm(context, isDark),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Icon(AppIcons.add, color: Colors.white, size: 28),
-      ),
-    );
-  }
-
   dynamic _getCategoryIcon(String category) {
     switch (category) {
       case 'Food':
@@ -350,19 +343,25 @@ class ExpensesView extends GetView<ExpensesController> {
   List<Color> _getCategoryGradient(String category) {
     switch (category) {
       case 'Food':
-        return [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)];
+        return const [AppColors.expensesAccent, AppColors.expensesGradientEnd];
       case 'Transport':
-        return [const Color(0xFF667EEA), const Color(0xFF764BA2)];
+        return const [AppColors.tasksAccent, AppColors.tasksGradientEnd];
       case 'Shopping':
-        return [const Color(0xFFFF9A9E), const Color(0xFFFECFEF)];
+        return const [AppColors.journalAccent, AppColors.journalGradientEnd];
       case 'Entertainment':
-        return [const Color(0xFFA18CD1), const Color(0xFFFBC2EB)];
+        return const [
+          AppColors.meditationAccent,
+          AppColors.meditationGradientEnd,
+        ];
       case 'Health':
-        return [const Color(0xFF11998E), const Color(0xFF38EF7D)];
+        return const [AppColors.habitsAccent, AppColors.habitsGradientEnd];
       case 'Bills':
-        return [const Color(0xFFFDC830), const Color(0xFFF37335)];
+        return const [AppColors.goalsAccent, AppColors.goalsGradientEnd];
       default:
-        return [const Color(0xFF8E2DE2), const Color(0xFF4A00E0)];
+        return const [
+          AppColors.meditationAccentDark,
+          AppColors.meditationAccent,
+        ];
     }
   }
 
@@ -375,7 +374,7 @@ class ExpensesView extends GetView<ExpensesController> {
       Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A2E) : Colors.white,
+          color: isDark ? AppColors.surfaceElevatedDark : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -430,13 +429,15 @@ class ExpensesView extends GetView<ExpensesController> {
             // Category selector
             SizedBox(
               height: 44,
-              child: Obx(
-                () => ListView.builder(
+              child: Obx(() {
+                // Read observable to register with GetX
+                final selected = selectedCategory.value;
+                return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: controller.categories.length,
                   itemBuilder: (context, index) {
                     final category = controller.categories[index];
-                    final isSelected = selectedCategory.value == category;
+                    final isSelected = selected == category;
 
                     return Padding(
                       padding: EdgeInsets.only(right: 8),
@@ -476,8 +477,8 @@ class ExpensesView extends GetView<ExpensesController> {
                       ),
                     );
                   },
-                ),
-              ),
+                );
+              }),
             ),
             const SizedBox(height: 16),
             // Note field
@@ -505,13 +506,7 @@ class ExpensesView extends GetView<ExpensesController> {
               onTap: () {
                 final amount = double.tryParse(amountController.text) ?? 0;
                 if (amount <= 0) {
-                  Get.snackbar(
-                    'Error',
-                    'Please enter a valid amount',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: const Color(0xFFFF6B6B),
-                    colorText: Colors.white,
-                  );
+                  AppToast.error(context, 'Please enter a valid amount');
                   return;
                 }
 
@@ -524,13 +519,20 @@ class ExpensesView extends GetView<ExpensesController> {
                   date: DateTime.now(),
                 );
                 Get.back();
+                AppToast.success(
+                  context,
+                  'Expense added — \$${amount.toStringAsFixed(2)} in ${selectedCategory.value}',
+                );
               },
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                    colors: [
+                      AppColors.expensesAccent,
+                      AppColors.expensesGradientEnd,
+                    ],
                   ),
                 ),
                 child: const Center(
@@ -587,7 +589,7 @@ class _PeriodChip extends GetView<ExpensesController> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isSelected ? const Color(0xFFFF6B6B) : Colors.white,
+              color: isSelected ? AppColors.expensesAccent : Colors.white,
             ),
           ),
         ),

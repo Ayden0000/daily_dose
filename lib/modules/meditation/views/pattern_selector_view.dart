@@ -8,6 +8,7 @@ import 'package:daily_dose/modules/meditation/controllers/meditation_controller.
 import 'package:daily_dose/widgets/app_button.dart';
 import 'package:daily_dose/widgets/app_input.dart';
 import 'package:daily_dose/widgets/app_card.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 
 /// Pattern selector view for creating custom patterns
 class PatternSelectorView extends GetView<MeditationController> {
@@ -190,11 +191,7 @@ class PatternSelectorView extends GetView<MeditationController> {
           ElevatedButton(
             onPressed: () {
               if (nameController.text.trim().isEmpty) {
-                Get.snackbar(
-                  'Error',
-                  'Please enter a pattern name',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                AppToast.error(context, 'Please enter a pattern name');
                 return;
               }
 

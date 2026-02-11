@@ -210,10 +210,8 @@ class ReviewView extends GetView<ReviewController> {
       title: 'Mood Trend',
       isDark: isDark,
       child: Obx(
-        () => _BarChart(
+        () => _MoodTimeline(
           values: controller.moodData,
-          maxValue: 5,
-          barColor: AppColors.journalAccent,
           isDark: isDark,
           isWeekly: controller.isWeekly.value,
         ),
@@ -412,7 +410,7 @@ class _BarChart extends StatelessWidget {
           child: Text(
             'No data yet',
             style: TextStyle(
-              color: isDark ? Colors.white38 : Colors.grey,
+              color: AppColors.reviewAccent.withValues(alpha: 0.5),
               fontSize: 13,
             ),
           ),
@@ -421,7 +419,7 @@ class _BarChart extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 120,
+      height: 140,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -430,59 +428,192 @@ class _BarChart extends StatelessWidget {
               ? (displayValues[i] / maxValue * 80).clamp(0.0, 80.0)
               : 0.0;
 
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Value label
-              if (displayValues[i] > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    displayValues[i] % 1 == 0
-                        ? '${displayValues[i].toInt()}'
-                        : displayValues[i].toStringAsFixed(1),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white54 : Colors.black45,
+          return Flexible(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Value label
+                if (displayValues[i] > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      displayValues[i] % 1 == 0
+                          ? '${displayValues[i].toInt()}'
+                          : displayValues[i].toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
                     ),
                   ),
-                ),
 
-              // Bar
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOutCubic,
-                width: isWeekly ? 28 : 44,
-                height: height > 0 ? height : 4,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  color: height > 0
-                      ? barColor.withValues(alpha: 0.8)
-                      : (isDark ? Colors.white12 : Colors.grey.shade200),
-                  gradient: height > 0
-                      ? LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [barColor, barColor.withValues(alpha: 0.6)],
-                        )
-                      : null,
+                // Bar
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutCubic,
+                  width: isWeekly ? 28 : 44,
+                  height: height > 0 ? height : 4,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    color: height > 0
+                        ? barColor.withValues(alpha: 0.8)
+                        : (isDark ? Colors.white12 : Colors.grey.shade200),
+                    gradient: height > 0
+                        ? LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [barColor, barColor.withValues(alpha: 0.6)],
+                          )
+                        : null,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              // Day label
-              Text(
-                labels[i],
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? Colors.white38 : Colors.grey,
+                // Day label
+                Text(
+                  labels[i],
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white38 : Colors.grey,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         }),
       ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MOOD TIMELINE — emoji face per day with date label
+// ══════════════════════════════════════════════════════════════
+
+class _MoodTimeline extends StatelessWidget {
+  final List<double> values;
+  final bool isDark;
+  final bool isWeekly;
+
+  const _MoodTimeline({
+    required this.values,
+    required this.isDark,
+    required this.isWeekly,
+  });
+
+  static const _emojis = ['', '😞', '😔', '😐', '🙂', '😄'];
+  static const _labels = ['', 'Awful', 'Bad', 'Okay', 'Good', 'Great'];
+  static const _colors = [
+    Colors.transparent,
+    Color(0xFFEF4444), // Awful - red
+    Color(0xFFF97316), // Bad - orange
+    Color(0xFFEAB308), // Okay - yellow
+    Color(0xFF22C55E), // Good - green
+    Color(0xFF10B981), // Great - emerald
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final dayLabels = isWeekly
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : ['W1', 'W2', 'W3', 'W4'];
+
+    final count = isWeekly ? 7 : 4;
+    final displayValues = List.generate(
+      count,
+      (i) => i < values.length ? values[i].round().clamp(0, 5) : 0,
+    );
+
+    if (displayValues.every((v) => v == 0)) {
+      return SizedBox(
+        height: 100,
+        child: Center(
+          child: Text(
+            'No mood records yet',
+            style: TextStyle(
+              color: AppColors.journalAccent.withValues(alpha: 0.5),
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: List.generate(count, (i) {
+        final mood = displayValues[i];
+        final hasRecord = mood > 0;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: i < count - 1 ? 8 : 0),
+          child: Row(
+            children: [
+              // Day label
+              SizedBox(
+                width: 40,
+                child: Text(
+                  dayLabels[i],
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white54 : Colors.black45,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Mood emoji + label row
+              if (hasRecord) ...[
+                Text(_emojis[mood], style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 10),
+                // Mood color bar
+                Expanded(
+                  child: Container(
+                    height: 28,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: _colors[mood].withValues(
+                        alpha: isDark ? 0.15 : 0.12,
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _labels[mood],
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _colors[mood],
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // No record placeholder
+                Expanded(
+                  child: Container(
+                    height: 28,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.04)
+                          : Colors.grey.shade100,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '—',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white24 : Colors.black26,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      }),
     );
   }
 }

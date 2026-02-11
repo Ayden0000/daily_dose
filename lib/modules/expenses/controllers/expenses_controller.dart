@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
 import 'package:daily_dose/data/models/expense_model.dart';
 import 'package:daily_dose/data/repositories/expense_repository.dart';
 import 'package:daily_dose/app/config/constants.dart';
@@ -38,7 +39,7 @@ class ExpensesController extends GetxController {
   // ============ DATA LOADING ============
 
   /// Load all expenses and summaries
-  void loadExpenses() {
+  Future<void> loadExpenses() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
@@ -62,7 +63,7 @@ class ExpensesController extends GetxController {
 
   /// Refresh expenses
   Future<void> refreshExpenses() async {
-    loadExpenses();
+    await loadExpenses();
   }
 
   // ============ COMPUTED GETTERS ============
@@ -118,7 +119,7 @@ class ExpensesController extends GetxController {
         date: date,
       );
 
-      loadExpenses();
+      await loadExpenses();
     } catch (e) {
       errorMessage.value = 'Failed to create expense: $e';
     } finally {
@@ -133,7 +134,7 @@ class ExpensesController extends GetxController {
       errorMessage.value = '';
 
       await _expenseRepository.updateExpense(expense);
-      loadExpenses();
+      await loadExpenses();
     } catch (e) {
       errorMessage.value = 'Failed to update expense: $e';
     } finally {
@@ -143,16 +144,26 @@ class ExpensesController extends GetxController {
 
   /// Delete an expense
   Future<void> deleteExpense(String id) async {
-    try {
-      isLoading.value = true;
-      errorMessage.value = '';
+    final existingIndex = expenses.indexWhere((e) => e.id == id);
+    if (existingIndex == -1) return;
 
+    final removed = expenses[existingIndex];
+
+    // Optimistic remove
+    expenses.removeAt(existingIndex);
+    expenses.refresh();
+    _updateSummaries();
+
+    try {
       await _expenseRepository.deleteExpense(id);
-      loadExpenses();
+      await loadExpenses();
     } catch (e) {
+      // Revert on failure
+      expenses.insert(existingIndex, removed);
+      expenses.refresh();
+      _updateSummaries();
       errorMessage.value = 'Failed to delete expense: $e';
-    } finally {
-      isLoading.value = false;
+      AppToast.error(Get.context!, 'Could not delete expense');
     }
   }
 

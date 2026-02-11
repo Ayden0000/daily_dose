@@ -81,6 +81,43 @@ class TaskRepository {
     await _storageService.deleteTask(id);
   }
 
+  // ============ DAILY RESET ============
+
+  /// Reset tasks that were completed on a previous day.
+  ///
+  /// Called at app startup and when loading the home/task screen.
+  /// This unmarks `isCompleted` so daily tasks feel fresh each morning,
+  /// while preserving `streakCount` history.
+  Future<int> resetDailyTasks() async {
+    final now = DateTime.now();
+    var resetCount = 0;
+
+    for (final task in getAllTasks()) {
+      if (!task.isCompleted) continue;
+      if (task.completedAt == null) continue;
+
+      final ca = task.completedAt!;
+      final isToday =
+          ca.year == now.year && ca.month == now.month && ca.day == now.day;
+
+      if (!isToday) {
+        task.isCompleted = false;
+        task.completedAt = null;
+        // Move dueDate to today so the task re-appears in Today's list
+        task.dueDate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          task.dueDate?.hour ?? 0,
+          task.dueDate?.minute ?? 0,
+        );
+        await _storageService.saveTask(task);
+        resetCount++;
+      }
+    }
+    return resetCount;
+  }
+
   // ============ COMPLETION ============
 
   /// Mark task as completed

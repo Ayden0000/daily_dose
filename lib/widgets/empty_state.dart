@@ -9,6 +9,7 @@ class EmptyState extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? action;
+  final Color? iconColor;
 
   const EmptyState({
     super.key,
@@ -16,11 +17,13 @@ class EmptyState extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.action,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = iconColor;
 
     return Center(
       child: Padding(
@@ -31,12 +34,16 @@ class EmptyState extends StatelessWidget {
             Icon(
               icon,
               size: 64,
-              color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              color: (accent ?? theme.colorScheme.primary).withValues(
+                alpha: 0.5,
+              ),
             ),
             AppSpacing.vGapLg,
             Text(
               title,
-              style: theme.textTheme.titleMedium,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: accent ?? theme.textTheme.titleMedium?.color,
+              ),
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[
@@ -44,7 +51,8 @@ class EmptyState extends StatelessWidget {
               Text(
                 subtitle!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color,
+                  color: (accent ?? theme.textTheme.bodySmall?.color)
+                      ?.withValues(alpha: 0.6),
                 ),
                 textAlign: TextAlign.center,
               ),

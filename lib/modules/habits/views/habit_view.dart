@@ -3,11 +3,15 @@ import 'package:get/get.dart';
 import 'package:daily_dose/app/constants/app_icons.dart';
 import 'package:daily_dose/app/theme/app_colors.dart';
 import 'package:daily_dose/app/config/constants.dart';
-import 'package:daily_dose/data/models/habit_model.dart';
 import 'package:daily_dose/modules/habits/controllers/habit_controller.dart';
 import 'package:daily_dose/widgets/empty_state.dart';
 import 'package:daily_dose/widgets/loading_state.dart';
-import 'package:daily_dose/widgets/app_button.dart';
+
+import 'package:daily_dose/widgets/primary_action_button.dart';
+import 'package:daily_dose/widgets/error_banner.dart';
+import 'package:daily_dose/widgets/app_toast.dart';
+import 'package:daily_dose/modules/habits/widgets/frequency_chip.dart';
+import 'package:daily_dose/modules/habits/widgets/habit_card.dart';
 
 /// Habit Tracker View — Premium Design
 ///
@@ -22,12 +26,20 @@ class HabitView extends GetView<HabitController> {
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0D0D1A)
-          : const Color(0xFFF8FAFF),
+          ? AppColors.scaffoldDark
+          : AppColors.scaffoldLight,
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(isDark),
+            Obx(
+              () => controller.errorMessage.isNotEmpty
+                  ? ErrorBanner(
+                      message: controller.errorMessage.value,
+                      onClose: () => controller.errorMessage.value = '',
+                    )
+                  : const SizedBox.shrink(),
+            ),
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
@@ -39,11 +51,7 @@ class HabitView extends GetView<HabitController> {
                     icon: AppIcons.habit,
                     title: 'No habits yet',
                     subtitle: 'Start building better routines',
-                    action: AppButton(
-                      label: 'Add Habit',
-                      icon: Icons.add,
-                      onPressed: () => _showAddHabitSheet(context, isDark),
-                    ),
+                    iconColor: AppColors.habitsAccent,
                   );
                 }
 
@@ -54,7 +62,7 @@ class HabitView extends GetView<HabitController> {
                     final habit = controller.habits[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _HabitCard(
+                      child: HabitCard(
                         habit: habit,
                         isDark: isDark,
                         isCompleted: controller.isHabitCompleted(habit.id),
@@ -69,7 +77,12 @@ class HabitView extends GetView<HabitController> {
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(context, isDark),
+      bottomNavigationBar: PrimaryActionButton(
+        label: 'Add Habit',
+        icon: Icons.add,
+        gradient: const [AppColors.habitsAccent, AppColors.habitsGradientEnd],
+        onPressed: () => _showAddHabitSheet(context, isDark),
+      ),
     );
   }
 
@@ -131,7 +144,7 @@ class HabitView extends GetView<HabitController> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                  colors: [AppColors.habitsAccent, AppColors.habitsGradientEnd],
                 ),
               ),
               child: Row(
@@ -202,32 +215,6 @@ class HabitView extends GetView<HabitController> {
     );
   }
 
-  // ============ FLOATING ACTION BUTTON ============
-
-  Widget _buildFAB(BuildContext context, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.habitsAccent.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () => _showAddHabitSheet(context, isDark),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: const Icon(AppIcons.add, color: Colors.white, size: 28),
-      ),
-    );
-  }
-
   // ============ ADD HABIT BOTTOM SHEET ============
 
   void _showAddHabitSheet(BuildContext context, bool isDark) {
@@ -244,14 +231,14 @@ class HabitView extends GetView<HabitController> {
       'Productivity',
       'Social',
       'Finance',
-      'Other',
+      'Wellness',
     ];
 
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A2E) : Colors.white,
+          color: isDark ? AppColors.surfaceElevatedDark : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SingleChildScrollView(
@@ -259,7 +246,6 @@ class HabitView extends GetView<HabitController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Center(
                 child: Container(
                   width: 40,
@@ -271,7 +257,6 @@ class HabitView extends GetView<HabitController> {
                 ),
               ),
               const SizedBox(height: 24),
-
               Text(
                 'New Habit',
                 style: TextStyle(
@@ -282,7 +267,6 @@ class HabitView extends GetView<HabitController> {
               ),
               const SizedBox(height: 20),
 
-              // Title field
               TextField(
                 controller: titleCtrl,
                 style: TextStyle(color: isDark ? Colors.white : Colors.black87),
@@ -388,7 +372,7 @@ class HabitView extends GetView<HabitController> {
               Obx(
                 () => Row(
                   children: [
-                    _FrequencyChip(
+                    FrequencyChip(
                       label: 'Daily',
                       isSelected:
                           selectedFrequency.value ==
@@ -398,7 +382,7 @@ class HabitView extends GetView<HabitController> {
                       isDark: isDark,
                     ),
                     const SizedBox(width: 8),
-                    _FrequencyChip(
+                    FrequencyChip(
                       label: 'Weekdays',
                       isSelected:
                           selectedFrequency.value ==
@@ -418,7 +402,10 @@ class HabitView extends GetView<HabitController> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (titleCtrl.text.trim().isEmpty) return;
+                    if (titleCtrl.text.trim().isEmpty) {
+                      AppToast.error(context, 'Please enter a habit name');
+                      return;
+                    }
                     controller.createHabit(
                       title: titleCtrl.text.trim(),
                       description: descCtrl.text.trim().isNotEmpty
@@ -428,6 +415,10 @@ class HabitView extends GetView<HabitController> {
                       frequency: selectedFrequency.value,
                     );
                     Get.back();
+                    AppToast.success(
+                      context,
+                      'Habit created — "${titleCtrl.text.trim()}"',
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.habitsAccent,
@@ -449,278 +440,6 @@ class HabitView extends GetView<HabitController> {
         ),
       ),
       isScrollControlled: true,
-    );
-  }
-}
-
-// ============ FREQUENCY CHIP ============
-
-class _FrequencyChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _FrequencyChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: isSelected
-              ? AppColors.habitsAccent
-              : (isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.grey.shade100),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : (isDark ? Colors.white54 : Colors.black54),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============ HABIT CARD ============
-
-class _HabitCard extends StatefulWidget {
-  final HabitModel habit;
-  final bool isDark;
-  final bool isCompleted;
-  final VoidCallback onToggle;
-  final VoidCallback onDelete;
-
-  const _HabitCard({
-    required this.habit,
-    required this.isDark,
-    required this.isCompleted,
-    required this.onToggle,
-    required this.onDelete,
-  });
-
-  @override
-  State<_HabitCard> createState() => _HabitCardState();
-}
-
-class _HabitCardState extends State<_HabitCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1,
-      end: 0.96,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dismissible(
-      key: Key(widget.habit.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => widget.onDelete(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-          ),
-        ),
-        child: const Icon(AppIcons.delete, color: Colors.white, size: 28),
-      ),
-      child: GestureDetector(
-        onTapDown: (_) => _controller.forward(),
-        onTapUp: (_) {
-          _controller.reverse();
-          widget.onToggle();
-        },
-        onTapCancel: () => _controller.reverse(),
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: widget.isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.white,
-              border: Border.all(
-                color: widget.isCompleted
-                    ? AppColors.habitsAccent.withValues(alpha: 0.3)
-                    : (widget.isDark ? Colors.white12 : Colors.grey.shade100),
-              ),
-              boxShadow: widget.isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-            ),
-            child: Row(
-              children: [
-                // Completion circle
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: widget.isCompleted
-                        ? AppColors.habitsAccent
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: widget.isCompleted
-                          ? AppColors.habitsAccent
-                          : (widget.isDark
-                                ? Colors.white30
-                                : Colors.grey.shade300),
-                      width: 2.5,
-                    ),
-                  ),
-                  child: widget.isCompleted
-                      ? const Icon(
-                          AppIcons.check,
-                          size: 18,
-                          color: Colors.white,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 14),
-
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.habit.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: widget.isCompleted
-                              ? (widget.isDark ? Colors.white38 : Colors.grey)
-                              : (widget.isDark ? Colors.white : Colors.black87),
-                          decoration: widget.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: AppColors.habitsAccent.withValues(
-                                alpha: 0.12,
-                              ),
-                            ),
-                            child: Text(
-                              widget.habit.category,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.habitsAccent,
-                              ),
-                            ),
-                          ),
-                          if (widget.habit.description != null &&
-                              widget.habit.description!.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                widget.habit.description!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: widget.isDark
-                                      ? Colors.white38
-                                      : Colors.grey,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Streak counter
-                if (widget.habit.currentStreak > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color(0xFFFF9500).withValues(alpha: 0.15),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          AppIcons.streak,
-                          size: 14,
-                          color: Color(0xFFFF9500),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${widget.habit.currentStreak}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFFF9500),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

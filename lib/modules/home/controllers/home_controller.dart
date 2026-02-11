@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:daily_dose/data/repositories/task_repository.dart';
 import 'package:daily_dose/data/repositories/expense_repository.dart';
@@ -75,12 +78,46 @@ class HomeController extends GetxController {
   final RxInt todaysFocusSessions = 0.obs;
   final RxString todaysFocusTime = '0m'.obs;
 
+  // Advice from API
+  final RxString advice = ''.obs;
+  final RxBool isAdviceLoading = true.obs;
+
   // ============ LIFECYCLE ============
 
   @override
   void onInit() {
     super.onInit();
     loadDashboardData();
+    _fetchAdvice();
+  }
+
+  // ============ API ============
+
+  /// Fetch a random advice from adviceslip.com
+  Future<void> _fetchAdvice() async {
+    isAdviceLoading.value = true;
+    try {
+      final client = HttpClient();
+      final request = await client.getUrl(
+        Uri.parse('https://api.adviceslip.com/advice'),
+      );
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final body = await response.transform(utf8.decoder).join();
+        final data = jsonDecode(body);
+        final text = data['slip']?['advice'] as String?;
+        if (text != null && text.isNotEmpty) {
+          advice.value = text;
+        }
+      }
+    } catch (_) {
+      // Keep whatever was loaded before, or show fallback
+      if (advice.value.isEmpty) {
+        advice.value = 'Let\'s make today count!';
+      }
+    } finally {
+      isAdviceLoading.value = false;
+    }
   }
 
   // ============ DATA LOADING ============
@@ -88,6 +125,9 @@ class HomeController extends GetxController {
   /// Load all dashboard data
   void loadDashboardData() {
     isLoading.value = true;
+
+    // Ensure stale completions from yesterday are cleared
+    _taskRepository.resetDailyTasks();
 
     // Tasks
     final todaysTasks = _taskRepository.getTodaysTasks();
@@ -129,6 +169,7 @@ class HomeController extends GetxController {
   /// Refresh dashboard
   Future<void> refreshDashboard() async {
     loadDashboardData();
+    await _fetchAdvice();
   }
 
   // ============ COMPUTED GETTERS ============
@@ -166,6 +207,9 @@ class HomeController extends GetxController {
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
   }
+
+  /// Random advice fetched from adviceslip.com
+  String get motivationalTagline => advice.value;
 
   /// Current date formatted
   String get formattedDate {

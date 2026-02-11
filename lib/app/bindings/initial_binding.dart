@@ -26,10 +26,10 @@ class InitialBinding extends Bindings {
     Get.put<NotificationService>(NotificationService(), permanent: true);
 
     // Repositories (depend on services)
-    Get.put<TaskRepository>(
-      TaskRepository(storageService: Get.find<StorageService>()),
-      permanent: true,
-    );
+    final taskRepo = TaskRepository(storageService: Get.find<StorageService>());
+    // Reset completion flags from previous days on cold start
+    taskRepo.resetDailyTasks();
+    Get.put<TaskRepository>(taskRepo, permanent: true);
     Get.put<ExpenseRepository>(
       ExpenseRepository(storageService: Get.find<StorageService>()),
       permanent: true,

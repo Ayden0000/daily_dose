@@ -79,47 +79,78 @@ class AppColors {
   static const Color borderDark = Color(0xFF374151);
   static const Color dividerDark = Color(0xFF1F2937);
 
+  // ============ SCAFFOLD BACKGROUNDS ============
+
+  static const Color scaffoldDark = Color(0xFF0D0D1A);
+  static const Color scaffoldLight = Color(0xFFF8FAFF);
+  static const Color surfaceElevatedDark = Color(0xFF1A1A2E);
+
+  // ============ HOME GRADIENT (warm energetic) ============
+
+  // Light — sunrise peach → soft coral → lavender
+  static const Color homeGradientLightStart = Color(0xFFFFF5ED);
+  static const Color homeGradientLightMid = Color(0xFFFDECE2);
+  static const Color homeGradientLightEnd = Color(0xFFEDE7F6);
+
+  // Dark — deep navy → indigo → purple
+  static const Color homeGradientDarkStart = Color(0xFF0B0B1E);
+  static const Color homeGradientDarkMid = Color(0xFF141432);
+  static const Color homeGradientDarkEnd = Color(0xFF1A1040);
+
   // ============ MODULE ACCENT COLORS ============
 
   // Tasks module - Blue tones
   static const Color tasksAccent = Color(0xFF3B82F6);
   static const Color tasksAccentLight = Color(0xFFDBEAFE);
   static const Color tasksAccentDark = Color(0xFF1E3A5F);
+  static const Color tasksGradientEnd = Color(0xFF60A5FA);
 
   // Expenses module - Green tones
   static const Color expensesAccent = Color(0xFF10B981);
   static const Color expensesAccentLight = Color(0xFFD1FAE5);
   static const Color expensesAccentDark = Color(0xFF064E3B);
+  static const Color expensesGradientEnd = Color(0xFF34D399);
 
   // Meditation module - Purple tones
   static const Color meditationAccent = Color(0xFF8B5CF6);
   static const Color meditationAccentLight = Color(0xFFEDE9FE);
   static const Color meditationAccentDark = Color(0xFF4C1D95);
+  static const Color meditationGradientEnd = Color(0xFFA78BFA);
 
   // Habits module - Teal tones
   static const Color habitsAccent = Color(0xFF14B8A6);
   static const Color habitsAccentLight = Color(0xFFCCFBF1);
   static const Color habitsAccentDark = Color(0xFF134E4A);
+  static const Color habitsGradientEnd = Color(0xFF2DD4BF);
 
   // Journal/Mood module - Rose tones
   static const Color journalAccent = Color(0xFFF43F5E);
   static const Color journalAccentLight = Color(0xFFFFE4E6);
   static const Color journalAccentDark = Color(0xFF881337);
+  static const Color journalGradientEnd = Color(0xFFFB7185);
 
   // Goals module - Amber tones
   static const Color goalsAccent = Color(0xFFF59E0B);
   static const Color goalsAccentLight = Color(0xFFFEF3C7);
   static const Color goalsAccentDark = Color(0xFF78350F);
+  static const Color goalsGradientEnd = Color(0xFFFBBF24);
 
   // Focus Timer module - Warm orange/brown tones
   static const Color focusAccent = Color(0xFFEA580C);
   static const Color focusAccentLight = Color(0xFFFFF7ED);
   static const Color focusAccentDark = Color(0xFF7C2D12);
+  static const Color focusGradientEnd = Color(0xFFFB923C);
 
   // Review module - Cyan tones
   static const Color reviewAccent = Color(0xFF06B6D4);
   static const Color reviewAccentLight = Color(0xFFCFFAFE);
   static const Color reviewAccentDark = Color(0xFF164E63);
+  static const Color reviewGradientEnd = Color(0xFF22D3EE);
+
+  // ============ DESTRUCTIVE GRADIENT ============
+
+  static const Color destructiveStart = Color(0xFFEF4444);
+  static const Color destructiveEnd = Color(0xFFF87171);
 
   // ============ MOOD COLORS ============
 
